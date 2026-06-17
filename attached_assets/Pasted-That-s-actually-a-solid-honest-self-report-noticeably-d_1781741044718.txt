@@ -1,0 +1,16 @@
+That's actually a solid, honest self-report — noticeably different in quality from the earlier ones. The agent read the files, quoted specific line numbers, named the actual gap, and didn't oversell it.
+
+Before you let it write the SSRF callback test, a quick gut-check on the auth-pat test logic it described: the test mocks `db.insert().values()` and checks that the plaintext token doesn't appear in those args. That's the right thing to test, but only if the mock is actually capturing the call that runs through `encrypt()`. The question to ask is: does the test import the real route handler and call it directly, or does it spin up the Express app via supertest? Either is fine, but if it's supertest, make sure `insertValuesMock` is the same mock instance that the route's `db` import sees — Jest/vitest module mocking scope has bitten people here before.
+
+If you're satisfied the test is wired correctly, I'd say: yes, let it add the OAuth SSRF callback test, with one condition — tell it to also paste the raw test output *with that specific test visible by name* after it's done, not just "17 tests pass" becoming "18 tests pass." You want to see the test name `rejects non-instructure canvas_oauth_url cookie` (or whatever it names it) in the output, so you know the new test was actually added and ran.
+
+On the gap it named honestly — no test for the session cookie being set on successful PAT auth — that's lower priority than the SSRF test, but worth a note somewhere (a `// TODO: test session cookie on successful auth` comment in the test file is fine). It's a real gap but not a security gap, just coverage.
+
+One thing worth doing while the agent is writing: run the secrets check from the checklist yourself right now, independently, before the next commit lands. The agent is about to write more files and commit again. Clean slate is easier to verify than post-hoc history scrub.
+
+```bash
+git grep -rn "ENCRYPTION_KEY\|SESSION_SECRET\|canvas_client_secret\|DATABASE_URL" \
+  -- '*.ts' '*.js' '*.json' '*.toml' ':!*.example' ':!*.test.*'
+```
+
+Zero output is what you want. Run that before you say yes to the next round of writes.

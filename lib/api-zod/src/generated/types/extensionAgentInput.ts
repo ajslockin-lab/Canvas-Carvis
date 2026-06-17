@@ -5,7 +5,9 @@
  * Carvis — Canvas LMS AI assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { PageContext } from './pageContext';
 
-export interface HealthStatus {
-  status: string;
+export interface ExtensionAgentInput {
+  command: string;
+  pageContext: PageContext;
 }

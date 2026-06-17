@@ -5,7 +5,9 @@
  * Carvis — Canvas LMS AI assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { UserProfile } from './userProfile';
 
-export interface HealthStatus {
-  status: string;
+export interface AuthResult {
+  success: boolean;
+  user?: UserProfile;
 }

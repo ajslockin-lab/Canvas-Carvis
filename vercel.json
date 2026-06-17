@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "pnpm --filter @workspace/carvis run build",
+  "outputDirectory": "artifacts/carvis/dist/public",
+  "installCommand": "pnpm install"
+}

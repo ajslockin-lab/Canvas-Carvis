@@ -5,7 +5,8 @@
  * Carvis — Canvas LMS AI assistant
  * OpenAPI spec version: 0.1.0
  */
+import type { ConversationEntry } from './conversationEntry';
 
-export interface HealthStatus {
-  status: string;
+export interface ConversationHistory {
+  messages: ConversationEntry[];
 }
