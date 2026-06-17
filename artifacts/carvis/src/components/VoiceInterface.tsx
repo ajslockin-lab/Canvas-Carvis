@@ -25,7 +25,11 @@ export function VoiceInterface({ onCommandSuccess }: VoiceInterfaceProps) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as Window & { SpeechRecognition?: typeof globalThis.SpeechRecognition; webkitSpeechRecognition?: typeof globalThis.SpeechRecognition }).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type SpeechRecognitionCtor = new () => any;
+      const SpeechRecognition: SpeechRecognitionCtor | undefined =
+        (window as unknown as Record<string, SpeechRecognitionCtor | undefined>)["SpeechRecognition"] ||
+        (window as unknown as Record<string, SpeechRecognitionCtor | undefined>)["webkitSpeechRecognition"];
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;

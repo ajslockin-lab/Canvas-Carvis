@@ -13,9 +13,14 @@ export function OrbCanvas({ state = "idle", className = "", analyser = null }: O
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    const orb = createOrb(canvasRef.current);
-    orbRef.current = orb;
-    return () => orb.destroy();
+    let orb: import("@/lib/carvisOrb").Orb | null = null;
+    try {
+      orb = createOrb(canvasRef.current);
+      orbRef.current = orb;
+    } catch {
+      // WebGL not available in this environment — orb degrades gracefully
+    }
+    return () => { orb?.destroy(); };
   }, []);
 
   useEffect(() => {

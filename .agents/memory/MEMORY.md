@@ -1,0 +1,3 @@
+- [Carvis token encryption](carvis-token-encryption.md) — Canvas tokens encrypted AES-256-GCM via ENCRYPTION_KEY; scoped IDs prevent cross-user DB collisions.
+- [Carvis session auth](carvis-session-auth.md) — httpOnly cookie `carvis_session` (30-day TTL) + sessions table; requireAuth helper in api-server/src/lib/auth.ts.
+- [Carvis WebGL fallback](carvis-webgl-fallback.md) — Three.js orb crashes in Replit sandbox (no GPU); OrbCanvas wraps createOrb in try/catch for graceful degradation.
