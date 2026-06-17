@@ -1,0 +1,531 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Carvis — Canvas LMS AI assistant
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: user
+    description: User data
+  - name: canvas
+    description: Canvas LMS sync
+  - name: voice
+    description: Voice commands
+  - name: extension
+    description: Chrome extension agent
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/canvas/pat:
+    post:
+      operationId: authCanvasPat
+      tags: [auth]
+      summary: Sign in with Canvas PAT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CanvasPatInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          description: Bad request
+
+  /auth/canvas/start:
+    post:
+      operationId: authCanvasOauthStart
+      tags: [auth]
+      summary: Start Canvas OAuth flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CanvasUrlInput"
+      responses:
+        "200":
+          description: OAuth URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthStartResult"
+        "400":
+          description: Bad request
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current session user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          description: Unauthorized
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out
+      responses:
+        "200":
+          description: Signed out
+
+  /user/data:
+    get:
+      operationId: getUserData
+      tags: [user]
+      summary: Get user courses and assignments
+      responses:
+        "200":
+          description: User data with courses
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserData"
+        "401":
+          description: Unauthorized
+
+  /canvas/sync:
+    post:
+      operationId: canvasSync
+      tags: [canvas]
+      summary: Sync courses and assignments from Canvas
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+        "400":
+          description: Canvas not connected
+        "401":
+          description: Unauthorized
+
+  /canvas/grades:
+    get:
+      operationId: getGrades
+      tags: [canvas]
+      summary: Get grade summary for all courses
+      responses:
+        "200":
+          description: Grade list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeList"
+        "401":
+          description: Unauthorized
+
+  /canvas/dashboard:
+    get:
+      operationId: getDashboard
+      tags: [canvas]
+      summary: Dashboard summary — upcoming due, overdue, grade avg
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "401":
+          description: Unauthorized
+
+  /canvas/assignments/{id}/complete:
+    patch:
+      operationId: toggleAssignmentComplete
+      tags: [canvas]
+      summary: Toggle assignment completion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+
+  /voice/command:
+    post:
+      operationId: voiceCommand
+      tags: [voice]
+      summary: Process a voice command
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoiceInput"
+      responses:
+        "200":
+          description: Command result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceResult"
+        "401":
+          description: Unauthorized
+
+  /voice/history:
+    get:
+      operationId: getConversationHistory
+      tags: [voice]
+      summary: Get recent conversation history
+      responses:
+        "200":
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationHistory"
+        "401":
+          description: Unauthorized
+
+  /extension/agent:
+    post:
+      operationId: extensionAgent
+      tags: [extension]
+      summary: Process a Chrome extension agent command
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionAgentInput"
+      responses:
+        "200":
+          description: Agent action result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionAgentResult"
+        "401":
+          description: Unauthorized
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    CanvasPatInput:
+      type: object
+      required: [canvasUrl, pat]
+      properties:
+        canvasUrl:
+          type: string
+        pat:
+          type: string
+
+    CanvasUrlInput:
+      type: object
+      required: [canvasUrl]
+      properties:
+        canvasUrl:
+          type: string
+
+    AuthResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: "#/components/schemas/UserProfile"
+
+    OAuthStartResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    Me:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        canvasBaseUrl:
+          type: ["string", "null"]
+        canvasConnected:
+          type: boolean
+
+    UserProfile:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: ["string", "null"]
+        canvasBaseUrl:
+          type: ["string", "null"]
+
+    Assignment:
+      type: object
+      required: [id, name, completed]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        points:
+          type: ["number", "null"]
+        url:
+          type: ["string", "null"]
+        completed:
+          type: boolean
+        courseId:
+          type: string
+        courseName:
+          type: ["string", "null"]
+
+    Course:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: ["string", "null"]
+        color:
+          type: ["string", "null"]
+        lastSynced:
+          type: ["string", "null"]
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Assignment"
+
+    UserData:
+      type: object
+      required: [user, courses, hasData]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Course"
+        hasData:
+          type: boolean
+
+    SyncResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        courseCount:
+          type: integer
+        assignmentCount:
+          type: integer
+        message:
+          type: ["string", "null"]
+
+    GradeItem:
+      type: object
+      required: [courseId, name]
+      properties:
+        courseId:
+          type: string
+        name:
+          type: string
+        currentScore:
+          type: ["number", "null"]
+        finalScore:
+          type: ["number", "null"]
+        letterGrade:
+          type: ["string", "null"]
+
+    GradeList:
+      type: object
+      required: [grades]
+      properties:
+        grades:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeItem"
+
+    DashboardSummary:
+      type: object
+      required: [upcomingCount, overdueCount, completedCount, totalAssignments]
+      properties:
+        upcomingCount:
+          type: integer
+        overdueCount:
+          type: integer
+        completedCount:
+          type: integer
+        totalAssignments:
+          type: integer
+        avgGrade:
+          type: ["number", "null"]
+        nextDue:
+          $ref: "#/components/schemas/Assignment"
+        courseCount:
+          type: integer
+
+    VoiceInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+
+    VoiceResult:
+      type: object
+      required: [response]
+      properties:
+        intent:
+          type: ["string", "null"]
+        response:
+          type: string
+        confidence:
+          type: ["number", "null"]
+
+    ConversationEntry:
+      type: object
+      required: [role, message, createdAt]
+      properties:
+        id:
+          type: integer
+        role:
+          type: string
+        message:
+          type: string
+        intent:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ConversationHistory:
+      type: object
+      required: [messages]
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversationEntry"
+
+    PageElement:
+      type: object
+      required: [id, tag, text]
+      properties:
+        id:
+          type: string
+        tag:
+          type: string
+        text:
+          type: string
+        ariaLabel:
+          type: ["string", "null"]
+        placeholder:
+          type: ["string", "null"]
+        href:
+          type: ["string", "null"]
+
+    PageContext:
+      type: object
+      required: [url, title, elements]
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/PageElement"
+
+    ExtensionAgentInput:
+      type: object
+      required: [command, pageContext]
+      properties:
+        command:
+          type: string
+        pageContext:
+          $ref: "#/components/schemas/PageContext"
+
+    AgentAction:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+        elementId:
+          type: ["string", "null"]
+        value:
+          type: ["string", "null"]
+        direction:
+          type: ["string", "null"]
+        url:
+          type: ["string", "null"]
+
+    ExtensionAgentResult:
+      type: object
+      required: [response]
+      properties:
+        response:
+          type: string
+        action:
+          $ref: "#/components/schemas/AgentAction"
+        blocked:
+          type: ["boolean", "null"]
