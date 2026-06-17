@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Carvis"
+version = "1.0.0"
+id = "artifacts/carvis"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23877
+
+[services.development]
+run = "pnpm --filter @workspace/carvis run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/carvis", "run", "build" ]
+publicDir = "artifacts/carvis/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23877"
+BASE_PATH = "/"
