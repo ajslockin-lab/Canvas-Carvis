@@ -1,0 +1,139 @@
+# Carvis — Fresh Session Prompt
+
+Paste everything below into the new Replit Agent session, connected to the
+`Canvas-Carvis` repo.
+
+```
+CONTEXT (you have no memory of any prior session — this is everything you need)
+
+Carvis is a student-facing AI co-pilot for Canvas LMS, built as an open-source
+portfolio project (not a production SaaS for real students yet — that
+distinction matters for some decisions below). You connect a Canvas account,
+it pulls courses/assignments/grades, and you can query it by voice. The
+aesthetic is a dark sci-fi HUD with an audio-reactive particle orb as the
+centerpiece visual.
+
+THREE REPOS ARE RELEVANT:
+
+1. https://github.com/ajslockin-lab/Canvas-Carvis — this is the repo you're
+   working in right now. It's the most advanced version. Current state:
+   - artifacts/carvis: a Vite + React app (the one actually running — its
+     package.json dev/build/serve scripts run Vite) that ALSO has an unused
+     Next.js app/ directory sitting next to it, never wired up. Pick ONE of
+     these two and delete the other entirely — don't leave both.
+   - artifacts/api-server: a separate Express 5 REST API (auth, canvas sync,
+     dashboard, voice, extension-agent routes), currently the real backend.
+   - lib/db: Drizzle ORM, 6-table Postgres schema (users, courses,
+     assignments, grades, conversations, sessions). Token encryption is
+     AES-256-GCM, applied before storage. This part works, keep it.
+   - lib/api-spec: an OpenAPI spec that Orval codegens into typed React
+     Query hooks. This pattern is good, keep it.
+   - artifacts/chrome-extension: MV3 extension, content script scrapes
+     *.instructure.com pages, has an options page for pointing at a
+     self-hosted Carvis URL instead of hardcoded localhost — verify this
+     actually works end to end, don't just assume it does because a file
+     exists.
+   - The orb: artifacts/carvis/src/lib/carvisOrb.ts +
+     src/components/OrbCanvas.tsx. Original Three.js particle system,
+     audio-reactive via AnalyserNode, idle/listening/thinking/speaking
+     states. This is good work — keep it as-is, don't rewrite it.
+   - A real LICENSE file (MIT) already exists at the repo root. Keep it,
+     don't touch it.
+   - Known problems to fix (see TASKS below): no tests anywhere despite a
+     vitest.config.ts existing; an attached_assets/ folder committed to git
+     containing pasted text files that have nothing to do with the app and
+     should never have been committed; the Next.js/Vite duplication above.
+
+2. https://github.com/ajslockin-lab/jarvis-canvas — an earlier, abandoned
+   Next.js + Prisma + NextAuth version of the same idea. Reference only, for
+   any auth/UI/page-structure patterns worth borrowing. Do NOT import its git
+   history, do NOT copy its .env.local.example or any committed config files
+   — that repo's history at one point contained a real leaked credential
+   (since scrubbed), so treat anything from its history as untrustworthy and
+   only look at its current file contents if you look at it at all.
+
+3. https://github.com/ajslockin-lab/pwajarvismobile — the mobile PWA
+   companion. Same monorepo skeleton as Canvas-Carvis (artifacts/jarvis-canvas
+   Vite app + artifacts/api-server Express), not migrated to Next.js, no
+   LICENSE, no tests — don't treat it as a second source of truth, treat it
+   as a parts bin. Two things in it are worth pulling into Canvas-Carvis:
+   - artifacts/jarvis-canvas/src/components/tabs/ (HomeTab.tsx, GradesTab.tsx,
+     AssignmentsTab.tsx, SettingsTab.tsx) + src/hooks/use-mobile.tsx — a real,
+     separate piece of work: a bottom-tab mobile layout. Port these into
+     whichever app survives step 1 below as the mobile/responsive view.
+   - Its README links a "Desktop App" back to the old abandoned
+     ajslockin-lab/jarvis-canvas repo instead of Canvas-Carvis — if you reuse
+     any of its README content, fix that link first, don't propagate it.
+   THIS REPO ALSO HAS A LIVE LEAKED SECRET RIGHT NOW, NOT JUST IN HISTORY:
+   its committed .replit file currently contains a real ENCRYPTION_KEY value
+   in [userenv.shared], publicly visible on GitHub as of this writing. Before
+   anything else in this repo: check whether this key is the same value as
+   whatever Canvas-Carvis's encryption key is (reused) or different
+   (independently generated). Either way it needs rotating out of Replit
+   Secrets and scrubbing from this repo's git history — don't just delete it
+   from the current file, the history copy is the actual exposure. Report
+   which case it was (same key reused, or two separate leaked keys) since
+   that changes how many systems need re-keying.
+
+GOAL FOR THIS SESSION
+
+End state should be ONE coherent, deployable app in Canvas-Carvis:
+single frontend/backend architecture (no parallel unused scaffolding),
+deployable to Vercel, no secrets ever committed anywhere, real test coverage
+on the parts that touch encryption/auth/Canvas data, and no leftover debug
+clutter in the repo.
+
+TASKS, IN ORDER
+
+1. Pick Next.js (App Router) as the single architecture. Port whatever's
+   missing from artifacts/api-server's Express routes into Next.js API
+   routes, then DELETE artifacts/api-server and the unused parts of the old
+   Vite setup entirely in the same commit — not a later "cleanup" commit,
+   the same one. After this step, show me the actual package.json
+   dev/build scripts so I can see they point at Next.js, not narrate that
+   it's done.
+
+2. Database: switch the Drizzle Postgres connection to a serverless-friendly
+   driver/connection string (Neon's pooled connection or
+   @neondatabase/serverless, or Vercel Postgres) instead of a plain pg.Pool
+   pointed at a single long-lived connection. Keep the schema as-is.
+
+3. Secrets: confirm nothing is in .replit's [userenv] section, confirm
+   .env.example only has placeholder values, confirm .gitignore covers .env
+   and .env.local. Grep the entire git history (not just current files) for
+   anything that looks like a real API key, token, or 32+ char hex string
+   before you consider this done, and show me the grep command and its
+   output, empty or not. Then go check pwajarvismobile's leaked
+   ENCRYPTION_KEY (see item 3 in the repo list above) — confirm whether it
+   matches Canvas-Carvis's key, rotate it via Replit Secrets (not the
+   .replit file), and scrub it from that repo's git history the same way.
+
+4. Add real tests: token encryption/decryption round-trip, the Canvas PAT
+   auth flow, and the Canvas sync upsert logic (the userId__courseId
+   scoping that prevents cross-user collisions). Doesn't need to be
+   exhaustive, just real coverage on the parts that touch other people's
+   data or secrets.
+
+5. Delete attached_assets/ and anything else in the repo that's debug
+   scratch material rather than part of the app. Add a .gitignore rule so
+   Replit's paste-to-file behavior doesn't recreate this.
+
+6. Chrome extension: verify the self-hosted-URL options page actually
+   changes where the extension fetches from at runtime — test it, don't
+   assume it from the file existing.
+
+7. Port the mobile tab components and use-mobile hook from pwajarvismobile
+   (see item 3 above) into the surviving app from step 1, as the
+   mobile/responsive view. Fix any "Desktop App" links pointing at the old
+   jarvis-canvas repo while you're in there.
+
+VERIFICATION DISCIPLINE — read this twice
+
+Previous sessions on this project reported things as "done" or "migrated"
+in commit messages when the actual running code hadn't changed (e.g. a
+commit titled "Migrate frontend to Next.js" that left the build scripts
+pointed at Vite). For every task above: after you make the change, show the
+actual file/script/command that proves it, not just a summary sentence.
+If something is partially done, say so explicitly rather than rounding up
+to "complete."
+```
