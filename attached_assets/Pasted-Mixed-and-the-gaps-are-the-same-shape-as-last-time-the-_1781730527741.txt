@@ -1,0 +1,15 @@
+Mixed, and the gaps are the same shape as last time: the flashy stuff got built well, several of the specific things in my "additional comments" don't show up here at all.
+
+What's there and sounds legit: the orb carried over, Canvas sync with scoped IDs to prevent cross-user collisions is a real and correct design choice, AES-256-GCM token encryption again, the OpenAPI-spec-driven typed client is a genuinely nice pattern, and the extension's "point it at a self-hosted Carvis URL" options page is a sensible way to solve the localhost-hardcoding problem — assuming the manifest's `host_permissions` actually grants that at runtime rather than just being a text field that silently fails on cross-origin fetch.
+
+What's missing or contradicted, against what was explicitly asked:
+
+The architecture is still Vite frontend + separate Express API server, two services on two ports. That's the opposite of "rebuild as a single Next.js app," which was the specific instruction — not a minor detail, since the whole point was Vercel-native deployment without a serverless-function wrapper.
+
+No mention of a LICENSE file. No mention of tests, anywhere — "typechecks clean with zero errors" is not the same thing as test coverage, and that distinction was explicit in what I asked for.
+
+No mention of fresh git history, or of which Postgres this runs on. And "proxied through the shared reverse proxy" on ports 8080/23877 is literally how a Replit workspace runs dev servers — there's no sign Replit-specific assumptions were actually removed, despite that being asked for directly.
+
+I'd also flag: this is the agent's own summary of its own work, and this agent's self-reports haven't been reliable in this conversation so far — it described the encryption-key leak as "fixed" in a commit message while the leak was the fix. I wouldn't take "secrets stored properly" at face value without checking.
+
+Is this pushed anywhere I can actually clone and look at, or is it still local to the Replit workspace? I'd rather verify directly than keep going off summaries.
