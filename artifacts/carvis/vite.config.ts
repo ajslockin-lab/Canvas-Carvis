@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT;
 
@@ -32,6 +33,63 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.svg", "robots.txt", "icon*.png"],
+      manifest: {
+        name: "Carvis",
+        short_name: "Carvis",
+        description: "AI co-pilot for Canvas LMS — command your academic trajectory.",
+        theme_color: "#060911",
+        background_color: "#060911",
+        display: "standalone",
+        orientation: "portrait",
+        scope: basePath,
+        start_url: basePath,
+        icons: [
+          {
+            src: "icon192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "icon512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "icon512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern: /^\/api\/canvas\/dashboard/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "carvis-api-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 300 },
+            },
+          },
+          {
+            urlPattern: /^\/api\/user\/data/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "carvis-user-cache",
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 },
+            },
+          },
+        ],
+      },
+      devOptions: {
+        enabled: false,
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

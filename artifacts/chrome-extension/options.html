@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Carvis — Settings</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #060911;
+      color: #e8eaf0;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 13px;
+      padding: 32px;
+      max-width: 480px;
+    }
+    h1 {
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      color: #FF4444;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    h1 span { color: #e8eaf0; }
+    label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #1e2535;
+      color: #e8eaf0;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 9px 12px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: #FF4444; }
+    button {
+      background: #FF4444;
+      color: #fff;
+      border: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 9px 20px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    #saved-msg {
+      display: none;
+      color: #FF4444;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 12px;
+    }
+    p { color: #6b7280; font-size: 11px; line-height: 1.6; margin-bottom: 20px; }
+    a { color: #FF4444; }
+  </style>
+</head>
+<body>
+  <h1>CARVIS_ <span>/ Settings</span></h1>
+  <p>
+    Point the extension at your Carvis instance. If you're using the hosted version, leave this as-is.
+    If you self-host, enter your deployment URL.
+  </p>
+
+  <label for="api-base">Carvis App URL</label>
+  <input type="text" id="api-base" placeholder="https://carvis.replit.app" />
+
+  <button id="save-btn">Save Settings</button>
+  <div id="saved-msg">Settings saved.</div>
+
+  <script>
+    const apiInput  = document.getElementById("api-base");
+    const saveBtn   = document.getElementById("save-btn");
+    const savedMsg  = document.getElementById("saved-msg");
+
+    chrome.storage.sync.get(["apiBase"], (result) => {
+      apiInput.value = result.apiBase || "https://carvis.replit.app";
+    });
+
+    saveBtn.addEventListener("click", () => {
+      const val = apiInput.value.trim().replace(/\/$/, "");
+      chrome.storage.sync.set({ apiBase: val }, () => {
+        savedMsg.style.display = "block";
+        setTimeout(() => (savedMsg.style.display = "none"), 2000);
+      });
+    });
+  </script>
+</body>
+</html>

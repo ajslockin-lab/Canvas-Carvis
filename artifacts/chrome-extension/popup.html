@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carvis</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #060911;
+      --surface:  #0d1117;
+      --border:   #1e2535;
+      --accent:   #FF4444;
+      --accent2:  #FF6B3D;
+      --text:     #e8eaf0;
+      --muted:    #6b7280;
+      --mono:     'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    body {
+      width: 320px;
+      min-height: 420px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text);
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .status-badge {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .status-badge.online { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Not-authed screen ── */
+    #auth-screen {
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+
+    #auth-screen p {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    #auth-screen a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* ── Main HUD ── */
+    #main-screen { display: none; }
+
+    .section {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ── Command input ── */
+    .input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    #cmd-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      border-radius: 0;
+      transition: border-color 0.15s;
+    }
+
+    #cmd-input:focus { border-color: var(--accent); }
+    #cmd-input::placeholder { color: var(--muted); }
+
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 7px 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: opacity 0.15s;
+    }
+
+    button:hover  { opacity: 0.85; }
+    button:active { opacity: 0.7; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #mic-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 10px;
+      font-size: 14px;
+    }
+
+    #mic-btn.listening {
+      border-color: var(--accent);
+      color: var(--accent);
+      animation: micPulse 0.8s infinite;
+    }
+
+    @keyframes micPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.4); }
+      50%       { box-shadow: 0 0 0 6px rgba(255,68,68,0); }
+    }
+
+    /* ── Response area ── */
+    #response-area {
+      min-height: 80px;
+      padding: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    #response-area.empty { color: var(--muted); font-style: italic; }
+    #response-area.blocked { border-color: #FF8800; }
+
+    .response-label {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      color: var(--accent);
+    }
+
+    .response-label.blocked { color: #FF8800; }
+
+    /* ── Stats row ── */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .stat {
+      background: var(--bg);
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-key {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-link {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-decoration: none;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .footer-link:hover { color: var(--accent); }
+
+    #not-canvas-msg {
+      display: none;
+      padding: 12px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+
+    #not-canvas-msg span { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      CARVIS_
+    </div>
+    <div class="status-badge" id="status-badge">CONNECTING</div>
+  </header>
+
+  <!-- Not signed in -->
+  <div id="auth-screen">
+    <p>Sign in to Carvis to use voice commands on Canvas.</p>
+    <p><a href="#" id="open-carvis-link">Open Carvis app</a> to connect your Canvas account.</p>
+  </div>
+
+  <!-- Not on Canvas page -->
+  <div id="not-canvas-msg">
+    Navigate to a <span>Canvas LMS</span> page to use voice commands.
+  </div>
+
+  <!-- Main HUD -->
+  <div id="main-screen">
+
+    <div class="section">
+      <div class="section-label">Command</div>
+      <div class="input-row">
+        <input id="cmd-input" type="text" placeholder="open assignments..." autocomplete="off" />
+        <button id="mic-btn" title="Voice input">&#x1F3A4;</button>
+        <button id="send-btn">RUN</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div id="response-label" class="response-label">CARVIS //</div>
+      <div id="response-area" class="empty">Awaiting command...</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Session</div>
+      <div id="stats-row" class="stats">
+        <div class="stat"><div class="stat-val" id="stat-due">—</div><div class="stat-key">Due Soon</div></div>
+        <div class="stat"><div class="stat-val" id="stat-overdue">—</div><div class="stat-key">Overdue</div></div>
+        <div class="stat"><div class="stat-val" id="stat-grade">—</div><div class="stat-key">Avg Grade</div></div>
+      </div>
+    </div>
+
+    <footer>
+      <span class="footer-link" id="open-dashboard">Open Dashboard</span>
+      <span class="footer-link" id="open-options">Settings</span>
+      <span class="footer-link" id="sign-out-btn">Sign Out</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
