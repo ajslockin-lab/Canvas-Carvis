@@ -157,6 +157,9 @@ importers:
 
   .:
     devDependencies:
+      '@rollup/rollup-win32-x64-msvc':
+        specifier: ^4.62.0
+        version: 4.62.0
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -2090,6 +2093,11 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@rollup/rollup-win32-x64-msvc@4.62.0':
+    resolution: {integrity: sha512-5L+T1fMX4RIEBoZzT0+sQ0PhTS36NULFmMXtl1TZo44TMAROIMHbZufSOjVWt/Y622BtxgxtaNOokbTDvfsrZA==}
+    cpu: [x64]
+    os: [win32]
 
   '@scalar/helpers@0.5.2':
     resolution: {integrity: sha512-Pi1GAl8jO6ungmGj2sjDfCfqiBNrKW6HXDZmminV94ybGU/KtRLOqHwd0n9FIhY3j0RYGpGC0VCuniCICfQPHg==}
@@ -6296,6 +6304,8 @@ snapshots:
 
   '@rollup/rollup-linux-x64-gnu@4.60.3':
     optional: true
+
+  '@rollup/rollup-win32-x64-msvc@4.62.0': {}
 
   '@scalar/helpers@0.5.2': {}
 

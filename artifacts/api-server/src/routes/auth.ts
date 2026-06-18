@@ -21,6 +21,8 @@ function createSessionCookie(res: import("express").Response, sessionId: string)
   });
 }
 
+export const VALIDATE_CANVAS_URL = /^https:\/\/[a-zA-Z0-9-]+\.instructure\.com$/;
+
 router.post("/auth/canvas/pat", async (req, res): Promise<void> => {
   const parsed = AuthCanvasPatBody.safeParse(req.body);
   if (!parsed.success) {
@@ -30,8 +32,7 @@ router.post("/auth/canvas/pat", async (req, res): Promise<void> => {
 
   const { canvasUrl, pat } = parsed.data;
 
-  const urlPattern = /^https:\/\/[a-zA-Z0-9-]+\.instructure\.com$/;
-  if (!urlPattern.test(canvasUrl)) {
+  if (!VALIDATE_CANVAS_URL.test(canvasUrl)) {
     res.status(400).json({ error: "Must be a valid Canvas URL (https://school.instructure.com)" });
     return;
   }
@@ -129,8 +130,7 @@ router.get("/auth/canvas", async (req, res): Promise<void> => {
     return;
   }
 
-  const urlPattern = /^https:\/\/[a-zA-Z0-9-]+\.instructure\.com$/;
-  if (!urlPattern.test(canvasUrl)) {
+  if (!VALIDATE_CANVAS_URL.test(canvasUrl)) {
     res.redirect(`${appUrl}/signin?error=${encodeURIComponent("Invalid Canvas URL in OAuth session")}`);
     return;
   }
