@@ -6,6 +6,19 @@ import { requireAuth } from "../lib/auth.js";
 
 const router = Router();
 
+router.get("/user/me", async (req, res): Promise<void> => {
+  const user = await requireAuth(req, res);
+  if (!user) return;
+
+  try {
+    const canvasConnected = user.canvasAccessTokenEncrypted !== null && user.canvasAccessTokenEncrypted !== undefined;
+    res.json({ canvasConnected });
+  } catch (err) {
+    req.log.error({ err }, "User me error");
+    res.status(500).json({ error: "Failed to fetch user status" });
+  }
+});
+
 router.get("/user/data", async (req, res): Promise<void> => {
   const user = await requireAuth(req, res);
   if (!user) return;

@@ -9,14 +9,18 @@ import { useAuth } from "@/components/AuthProvider";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
-  const { session } = useAuth();
+  const { session, canvasConnected, loading } = useAuth();
 
-  // Redirect to dashboard if already authenticated
+  // Redirect based on Canvas connection state
   React.useEffect(() => {
-    if (session) {
+    if (!session) return;
+    if (loading) return;
+    if (canvasConnected === false) {
+      setLocation("/canvas-setup");
+    } else if (canvasConnected === true) {
       setLocation("/dashboard");
     }
-  }, [session, setLocation]);
+  }, [session, canvasConnected, loading, setLocation]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
