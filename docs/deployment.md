@@ -23,6 +23,7 @@ Go to **Project Settings → Environment Variables** and add all five:
 | `DATABASE_URL` | Postgres connection string for your production database. |
 | `CANVAS_CLIENT_ID` | From your Canvas LMS developer key (needed only for OAuth flow; PAT auth works without it). |
 | `CANVAS_CLIENT_SECRET` | From your Canvas LMS developer key. Same caveat as above. |
+| `DEMO_MODE` | Set to `true` to serve hardcoded seed data (fake user "Alex Rivera", 4 courses, plausible assignments). No real Canvas or database access — safe for a public portfolio URL. Omit or set to `false` for production. |
 
 `APP_URL` (optional but recommended) should be set to your production domain so OAuth redirect URIs resolve correctly, e.g. `https://carvis.vercel.app`.
 

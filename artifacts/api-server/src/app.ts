@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import demoRouter from "./routes/demo.js";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -30,6 +31,11 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+if (process.env["DEMO_MODE"] === "true") {
+  logger.info("DEMO_MODE enabled — serving seed data, no real Canvas or DB access");
+  app.use("/api", demoRouter);
+}
 
 app.use("/api", router);
 
