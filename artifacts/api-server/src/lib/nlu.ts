@@ -10,7 +10,7 @@ interface NLUResult {
   rawText: string;
 }
 
-type AssignmentCtx = { id: string; name: string; dueDate: Date | null; courseName?: string };
+type AssignmentCtx = { id: string; name: string; dueDate: Date | null; courseName?: string; overdue?: boolean };
 
 let groqClient: {
   chat: {
@@ -77,15 +77,21 @@ export async function generateResponse(
   context: { assignments?: AssignmentCtx[] }
 ): Promise<string> {
   const assignments = context.assignments || [];
-  const summary = assignments
-    .map((a) => {
+  const overdue = assignments.filter((a) => a.overdue);
+  const upcoming = assignments.filter((a) => !a.overdue);
+  const summary = [
+    ...overdue.map((a) => {
+      const due = a.dueDate ? new Date(a.dueDate).toLocaleDateString() : "unknown";
+      return `- [OVERDUE] ${a.name}${a.courseName ? ` (${a.courseName})` : ""} — was due ${due}`;
+    }),
+    ...upcoming.map((a) => {
       const due = a.dueDate ? new Date(a.dueDate).toLocaleDateString() : "soon";
       return `- ${a.name}${a.courseName ? ` (${a.courseName})` : ""} — due ${due}`;
-    })
-    .slice(0, 10);
+    }),
+  ].slice(0, 10);
 
   const groq = await getGroq();
-  if (!groq) return fallbackResponse(intent, summary);
+  if (!groq) return fallbackResponse(intent, summary, overdue.length, upcoming.length);
 
   try {
     const completion = await groq.chat.completions.create({
@@ -106,17 +112,23 @@ export async function generateResponse(
     });
     return completion.choices[0]?.message?.content || "I'm not sure about that. Could you rephrase?";
   } catch {
-    return fallbackResponse(intent, summary);
+    return fallbackResponse(intent, summary, overdue.length, upcoming.length);
   }
 }
 
-function fallbackResponse(intent: string, summary: string[]): string {
+function fallbackResponse(intent: string, summary: string[], overdueCount: number, upcomingCount: number): string {
   switch (intent) {
     case "check_deadlines":
-    case "upcoming_assignments":
-      if (summary.length === 0) return "You have no upcoming assignments right now.";
-      return `You have ${summary.length} upcoming assignment${summary.length > 1 ? "s" : ""}. Next up: ${summary[0]?.replace("- ", "")}.`;
+    case "upcoming_assignments": {
+      const parts: string[] = [];
+      if (overdueCount > 0) parts.push(`${overdueCount} overdue`);
+      if (upcomingCount > 0) parts.push(`${upcomingCount} upcoming`);
+      if (parts.length === 0) return "You have no pending assignments right now.";
+      const first = summary[0]?.replace(/^- (\[OVERDUE\] )?/, "") ?? "";
+      return `You have ${parts.join(" and ")} assignment${overdueCount + upcomingCount > 1 ? "s" : ""}. ${overdueCount > 0 ? "Most urgent: " : "Next up: "}${first}.`;
+    }
     case "study_plan":
+      if (overdueCount > 0) return `You have ${overdueCount} overdue assignment${overdueCount > 1 ? "s" : ""} to clear first, then focus on upcoming deadlines.`;
       return "Based on your upcoming deadlines, I'd suggest focusing on your most urgent assignments first.";
     case "tutor":
       return "I can help you understand your course material. What topic would you like to review?";

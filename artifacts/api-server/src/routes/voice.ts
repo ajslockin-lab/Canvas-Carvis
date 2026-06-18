@@ -34,12 +34,10 @@ router.post("/voice/command", async (req, res): Promise<void> => {
             .select()
             .from(assignmentsTable)
             .where(and(eq(assignmentsTable.courseId, c.id), eq(assignmentsTable.completed, false)));
-          return items.map((a) => ({ ...a, courseName: c.name }));
+          return items.map((a) => ({ ...a, courseName: c.name, overdue: !!a.dueDate && a.dueDate < now }));
         })
       )
-    )
-      .flat()
-      .filter((a) => !a.dueDate || a.dueDate >= now);
+    ).flat();
 
     const nlu = await classifyIntent(text);
     const response = await generateResponse(nlu.intent, nlu.entities, { assignments });

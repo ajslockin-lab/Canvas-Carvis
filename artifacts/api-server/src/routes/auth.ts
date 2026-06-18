@@ -129,6 +129,12 @@ router.get("/auth/canvas", async (req, res): Promise<void> => {
     return;
   }
 
+  const urlPattern = /^https:\/\/[a-zA-Z0-9-]+\.instructure\.com$/;
+  if (!urlPattern.test(canvasUrl)) {
+    res.redirect(`${appUrl}/signin?error=${encodeURIComponent("Invalid Canvas URL in OAuth session")}`);
+    return;
+  }
+
   try {
     const tokenRes = await fetch(`${canvasUrl}/login/oauth2/token`, {
       method: "POST",
