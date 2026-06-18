@@ -34,8 +34,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const isDemoMode = import.meta.env["VITE_DEMO_MODE"] === "true";
+
   return (
-    <div className="min-h-screen w-full bg-background flex">
+    <div className="min-h-screen w-full bg-background flex flex-col">
+      {isDemoMode && (
+        <div className="w-full border-b border-amber-500/40 bg-amber-500/5 px-6 py-1 flex items-center justify-center gap-2 shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-amber-500">
+            DEMO MODE · no real Canvas data
+          </span>
+        </div>
+      )}
+      <div className="flex flex-1 overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-sidebar flex flex-col h-screen sticky top-0 shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-border">
@@ -103,6 +114,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }
