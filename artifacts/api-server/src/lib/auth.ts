@@ -1,8 +1,19 @@
 import type { Request, Response } from "express";
+import { createClient } from "@supabase/supabase-js";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable } from "@workspace/db";
-import { eq, and, gt } from "drizzle-orm";
+import { usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { decrypt } from "./crypto.js";
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : null;
 
 export interface AuthedUser {
   id: string;
@@ -16,38 +27,39 @@ export interface AuthedUser {
 }
 
 export async function requireAuth(req: Request, res: Response): Promise<AuthedUser | null> {
-  let sessionId: string | null = null;
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-  const cookies = (req as Request & { cookies?: Record<string, string> }).cookies;
-  const cookie = cookies?.["carvis_session"];
-  if (cookie) sessionId = cookie;
-
-  if (!sessionId) {
-    const header = req.headers["x-session-token"];
-    if (typeof header === "string" && header) sessionId = header;
-  }
-
-  if (!sessionId) {
+  if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return null;
   }
 
-  const now = new Date();
-  const [session] = await db
-    .select()
-    .from(sessionsTable)
-    .where(and(eq(sessionsTable.id, sessionId), gt(sessionsTable.expiresAt, now)))
-    .limit(1);
-
-  if (!session) {
-    res.status(401).json({ error: "Session expired or invalid" });
+  if (!supabaseAdmin) {
+    res.status(500).json({ error: "Auth service not configured" });
     return null;
   }
 
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+  if (error || !data.user) {
+    res.status(401).json({ error: "Invalid or expired token" });
+    return null;
+  }
+
+  const supabaseUser = data.user;
+
+  // Attach req.user for downstream use (minimal shape)
+  (req as any).user = {
+    id: supabaseUser.id,
+    email: supabaseUser.email,
+  };
+
+  // Fetch the full user record from our DB
   const [user] = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.id, session.userId))
+    .where(eq(usersTable.id, supabaseUser.id))
     .limit(1);
 
   if (!user) {

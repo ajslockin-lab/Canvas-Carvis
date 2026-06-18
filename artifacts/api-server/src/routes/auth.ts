@@ -1,25 +1,13 @@
 import { Router } from "express";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable } from "@workspace/db";
+import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { encrypt } from "../lib/crypto.js";
 import { fetchCanvasUser } from "../lib/canvas-fetch.js";
 import { AuthCanvasPatBody, AuthCanvasOauthStartBody } from "@workspace/api-zod";
-import { requireAuth } from "../lib/auth.js";
 
 const router = Router();
-
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-
-function createSessionCookie(res: import("express").Response, sessionId: string) {
-  res.cookie("carvis_session", sessionId, {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: SESSION_TTL_MS,
-    path: "/",
-  });
-}
 
 export const VALIDATE_CANVAS_URL = /^https:\/\/[a-zA-Z0-9-]+\.instructure\.com$/;
 
@@ -64,11 +52,6 @@ router.post("/auth/canvas/pat", async (req, res): Promise<void> => {
       await db.insert(usersTable).values({ id: userId, ...userData });
     }
 
-    const sessionId = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-    await db.insert(sessionsTable).values({ id: sessionId, userId, expiresAt });
-
-    createSessionCookie(res, sessionId);
     res.json({ success: true, user: { id: userId, email, name: canvasUser.name || null, canvasBaseUrl: canvasUrl } });
   } catch (err) {
     req.log.error({ err }, "Canvas PAT auth error");
@@ -188,11 +171,6 @@ router.get("/auth/canvas", async (req, res): Promise<void> => {
       await db.insert(usersTable).values({ id: userId, ...userData });
     }
 
-    const sessionId = randomBytes(32).toString("hex");
-    const sessionExpiry = new Date(Date.now() + SESSION_TTL_MS);
-    await db.insert(sessionsTable).values({ id: sessionId, userId, expiresAt: sessionExpiry });
-
-    createSessionCookie(res, sessionId);
     res.redirect(`${appUrl}/dashboard`);
   } catch (err) {
     req.log.error({ err }, "Canvas OAuth callback error");
@@ -200,28 +178,7 @@ router.get("/auth/canvas", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/auth/me", async (req, res): Promise<void> => {
-  const user = await requireAuth(req, res);
-  if (!user) return;
-
-  res.json({
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    canvasBaseUrl: user.canvasBaseUrl,
-    canvasConnected: !!user.canvasAccessTokenEncrypted,
-  });
-});
-
-router.post("/auth/logout", async (req, res): Promise<void> => {
-  const reqWithCookies = req as import("express").Request & { cookies: Record<string, string> };
-  const sessionId = reqWithCookies.cookies?.["carvis_session"];
-  if (sessionId) {
-    try {
-      await db.delete(sessionsTable).where(eq(sessionsTable.id, sessionId));
-    } catch {
-    }
-  }
+router.post("/auth/logout", async (_req, res): Promise<void> => {
   res.clearCookie("carvis_session", { path: "/" });
   res.json({ success: true });
 });

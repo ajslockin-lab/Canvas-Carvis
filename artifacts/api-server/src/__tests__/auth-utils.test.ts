@@ -1,21 +1,79 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import type { Request, Response } from "express";
 
+const mockGetUser = vi.fn();
+
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn().mockReturnValue({
+    auth: {
+      getUser: mockGetUser,
+    },
+  }),
+}));
+
 beforeAll(() => {
   process.env.ENCRYPTION_KEY =
     "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+  process.env.SUPABASE_URL = "http://localhost:54321";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
 });
 
 describe("lib/auth requireAuth", () => {
-  it("rejects missing session", async () => {
+  it("rejects missing Authorization header", async () => {
+    const { requireAuth } = await import("../lib/auth.js");
     const mockRes = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn().mockReturnThis(),
     } as unknown as Response;
-    const { requireAuth } = await import("../lib/auth.js");
-    const req = { headers: {}, cookies: {} } as unknown as Request;
+    const req = { headers: {} } as unknown as Request;
     const result = await requireAuth(req, mockRes);
     expect(result).toBeNull();
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+  });
+
+  it("rejects invalid JWT token", async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: "Invalid token" },
+    });
+
+    const { requireAuth } = await import("../lib/auth.js");
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+    } as unknown as Response;
+    const req = {
+      headers: { authorization: "Bearer bad-token" },
+    } as unknown as Request;
+    const result = await requireAuth(req, mockRes);
+    expect(result).toBeNull();
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockGetUser).toHaveBeenCalledWith("bad-token");
+  });
+
+  it("valid JWT but user not in local DB", async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: "user-123",
+          email: "test@example.com",
+        },
+      },
+      error: null,
+    });
+
+    const { requireAuth } = await import("../lib/auth.js");
+    const mockRes = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+    } as unknown as Response;
+    const req = {
+      headers: { authorization: "Bearer valid-jwt-token" },
+    } as unknown as Request;
+    const result = await requireAuth(req, mockRes);
+    // DB mock returns no user, so we get 401 "User not found"
+    expect(result).toBeNull();
+    expect(mockGetUser).toHaveBeenCalledWith("valid-jwt-token");
     expect(mockRes.status).toHaveBeenCalledWith(401);
   });
 });
@@ -34,30 +92,6 @@ describe("lib/auth getCanvasToken", () => {
       canvasUserId: null,
     });
     expect(result).toBeNull();
-  });
-});
-
-describe("lib/auth with session cookie", () => {
-  it("extracts session from cookies", async () => {
-    const { requireAuth } = await import("../lib/auth.js");
-    const mockRes = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() } as unknown as Response;
-    const req = {
-      headers: {},
-      cookies: { jarvis_session: "fake-session-id" },
-    } as unknown as Request;
-    const result = await requireAuth(req, mockRes);
-    expect(result === null || typeof result === "object").toBe(true);
-  });
-
-  it("extracts session from x-session-token header", async () => {
-    const { requireAuth } = await import("../lib/auth.js");
-    const mockRes = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() } as unknown as Response;
-    const req = {
-      headers: { "x-session-token": "header-session-id" },
-      cookies: {},
-    } as unknown as Request;
-    const result = await requireAuth(req, mockRes);
-    expect(result === null || typeof result === "object").toBe(true);
   });
 });
 
