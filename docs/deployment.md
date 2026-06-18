@@ -64,4 +64,5 @@ There is no automated deploy script for the extension — CWS review is manual a
 
 - **Rotate `ENCRYPTION_KEY` with care.** Rotating it invalidates all existing encrypted Canvas tokens in the database (users will need to re-authenticate). If you rotate, clear the `canvas_access_token_encrypted` column before redeploying.
 - **`GROQ_API_KEY`** (optional): add this if you want live NLU intent classification via Groq's Llama 3 API. Without it, voice commands fall back to keyword-based responses — functional but not AI-powered.
+- **Voice input** requires mic permissions on the deployed origin — it won't work in the Replit preview iframe, open the deployed URL directly to test.
 - Production schema changes are applied via Vercel's publish flow (Replit) or `drizzle-kit push` with the production `DATABASE_URL`. Do not add startup-time DDL to the app code.
