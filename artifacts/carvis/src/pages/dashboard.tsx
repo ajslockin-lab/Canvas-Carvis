@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { VoiceInterface } from "@/components/VoiceInterface";
+import { OrbCanvas } from "@/components/OrbCanvas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -195,8 +196,11 @@ export default function Dashboard() {
 
         </div>
 
-        {/* Right Column: CARVIS Terminal */}
-        <div className="lg:col-span-1 h-full min-h-[500px]">
+        {/* Right Column: CARVIS Terminal + Orb */}
+        <div className="lg:col-span-1 flex flex-col gap-6 h-full min-h-[500px]">
+          <div className="h-[300px] rounded-none border border-border bg-card overflow-hidden">
+            <OrbCanvas />
+          </div>
           <VoiceInterface onCommandSuccess={handleCommandSuccess} />
         </div>
       </div>
